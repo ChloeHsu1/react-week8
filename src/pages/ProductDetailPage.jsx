@@ -1,13 +1,19 @@
 import axios from "axios";
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Link, useParams } from "react-router-dom";
 import ReactLoading from 'react-loading';
+import { useDispatch } from "react-redux";
+import { updateCartData } from "../redux/cartSlice";
+import Swiper from "swiper";
+import { Autoplay } from "swiper/modules";
+import "swiper/css";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const API_PATH = import.meta.env.VITE_API_PATH;
 
 export default function ProductDetailPage() {
     const [product, setProduct] = useState({});
+    const [products, setProducts] = useState([]);
     const [qtySelect, setQtySelect] = useState(1);
     
     // 顯示Loading
@@ -16,6 +22,44 @@ export default function ProductDetailPage() {
 
     // 使用 useParams 取得id
     const { id: product_id } = useParams();
+
+    const dispatch = useDispatch();
+
+    const swiperRef = useRef(null);
+
+    // 取得購物車列表
+    const getCart = async () => {
+        try {
+        const res = await axios.get(`${BASE_URL}/v2/api/${API_PATH}/cart`);
+
+        dispatch(updateCartData(res.data.data));
+        } catch (error) {
+        alert('取得購物車列表失敗')
+        }
+    }
+
+    // 取得產品資料
+    useEffect(() => {
+        getCart();
+
+        // 產品輪播功能
+        new Swiper(swiperRef.current, {
+            modules: [Autoplay],
+            loop: true,
+            autoplay: {
+                delay: 2500,
+                disableOnInteraction: false,
+            },
+            slidesPerView: 2,
+            spaceBetween: 10,
+            breakpoints: {
+                767: {
+                slidesPerView: 3,
+                spaceBetween: 30,
+                },
+            },
+        });
+    }, []);
 
     // 取得產品資料
     useEffect(() => {
@@ -31,6 +75,25 @@ export default function ProductDetailPage() {
         }
         };
         getProduct();
+
+        // 滾動到頂部
+        window.scrollTo(0, 0)
+    }, [product_id]);
+
+    // 取得產品資料
+    useEffect(() => {
+        const getProducts = async () => {
+        setIsScreenLoading(true);
+        try {
+            const res = await axios.get(`${BASE_URL}/v2/api/${API_PATH}/products`);
+            setProducts(res.data.products);
+        } catch (error) {
+            alert("取得產品失敗");
+        } finally {
+            setIsScreenLoading(false);
+        }
+        };
+        getProducts();
     }, []);
 
     // 加入購物車
@@ -49,6 +112,7 @@ export default function ProductDetailPage() {
         } finally {
         setIsLoading(false);
         }
+        getCart();
     }
 
     return (
@@ -67,6 +131,7 @@ export default function ProductDetailPage() {
                             src={product.imageUrl}
                             className="d-block w-100"
                             alt={product.title}
+                            style={{ width: "100%", height: "600px", objectFit: "cover" }}
                         />
                         </div>
                     </div>
@@ -77,8 +142,8 @@ export default function ProductDetailPage() {
                         data-slide="prev"
                     >
                         <span
-                        className="carousel-control-prev-icon"
-                        aria-hidden="true"
+                            className="carousel-control-prev-icon"
+                            aria-hidden="true"
                         ></span>
                         <span className="sr-only">Previous</span>
                     </a>
@@ -116,9 +181,9 @@ export default function ProductDetailPage() {
                     </nav>
                     <h2 className="fw-bold h1 mb-1">{product.title}</h2>
                     <p className="mb-0 text-muted text-end">
-                    <del>NT${product.origin_price.toLocaleString()}</del>
+                    <del>NT${product.origin_price?.toLocaleString()}</del>
                     </p>
-                    <p className="h4 fw-bold text-end">NT${product.price.toLocaleString()}</p>
+                    <p className="h4 fw-bold text-end">NT${product.price?.toLocaleString()}</p>
                     <div className="row align-items-center">
                     <div className="col-6">
                         <div className="input-group my-3 bg-light rounded">
@@ -168,134 +233,66 @@ export default function ProductDetailPage() {
                 <div className="row my-5">
                 <div className="col-md-4">
                     <p>
-                    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
-                    nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam
-                    erat, sed diam voluptua. At vero eos et accusam et
+                        {product.description}
                     </p>
                 </div>
                 <div className="col-md-3">
                     <p className="text-muted">
-                    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
-                    nonumy eirmod tempor
+                        {product.content}
                     </p>
                 </div>
                 </div>
-                <h3 className="fw-bold">Lorem ipsum dolor sit amet</h3>
-                <div className="swiper-container mt-4 mb-5">
-                <div className="swiper-wrapper">
-                    <div className="swiper-slide">
-                    <div className="card border-0 mb-4 position-relative position-relative">
-                        <img
-                        src="https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1950&q=80"
-                        className="card-img-top rounded-0"
-                        alt="..."
-                        />
-                        <a href="#" className="text-dark"></a>
-                        <div className="card-body p-0">
-                        <h4 className="mb-0 mt-3">
-                            <a href="#">Lorem ipsum</a>
-                        </h4>
-                        <p className="card-text mb-0">
-                            NT$1,080
-                            <span className="text-muted ">
-                            <del>NT$1,200</del>
-                            </span>
-                        </p>
-                        <p className="text-muted mt-3"></p>
-                        </div>
+                <h3 className="fw-bold">其他產品推薦</h3>
+                <div ref={swiperRef} className="swiper mt-4 mb-5">
+                    <div className="swiper-wrapper">
+                        {products.map((productOther) => (
+                            <div className="swiper-slide">
+                            <div className="card border-0 mb-4 position-relative position-relative">
+                                <img
+                                    src={productOther.imageUrl}
+                                    className="card-img-top rounded-0"
+                                    alt={productOther.title}
+                                    style={{ width: "350px", height: "300px", objectFit: "cover" }}
+                                />
+                                <a href="#" className="text-dark"></a>
+                                <div className="card-body p-0">
+                                <h4 className="mb-0 mt-3">
+                                    <Link 
+                                        to={`/products/${productOther.id}`}
+                                        className="border-none text-muted"
+                                        style={{ textDecoration: 'none' }}
+                                    >
+                                        {productOther.title}
+                                    </Link>
+                                </h4>
+                                <p className="card-text mb-0">
+                                    NT${productOther.price?.toLocaleString()}
+                                    <span className="text-muted ">
+                                    <del>NT${productOther.origin_price?.toLocaleString()}</del>
+                                    </span>
+                                </p>
+                                <p className="text-muted mt-3"></p>
+                                </div>
+                            </div>
+                            </div>
+                        ))}
                     </div>
-                    </div>
-                    <div className="swiper-slide">
-                    <div className="card border-0 mb-4 position-relative position-relative">
-                        <img
-                        src="https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1950&q=80"
-                        className="card-img-top rounded-0"
-                        alt="..."
-                        />
-                        <a href="#" className="text-dark"></a>
-                        <div className="card-body p-0">
-                        <h4 className="mb-0 mt-3">
-                            <a href="#">Lorem ipsum</a>
-                        </h4>
-                        <p className="card-text mb-0">
-                            NT$1,080
-                            <span className="text-muted ">
-                            <del>NT$1,200</del>
-                            </span>
-                        </p>
-                        <p className="text-muted mt-3"></p>
-                        </div>
-                    </div>
-                    </div>
-                    <div className="swiper-slide">
-                    <div className="card border-0 mb-4 position-relative position-relative">
-                        <img
-                        src="https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1950&q=80"
-                        className="card-img-top rounded-0"
-                        alt="..."
-                        />
-                        <a href="#" className="text-dark"></a>
-                        <div className="card-body p-0">
-                        <h4 className="mb-0 mt-3">
-                            <a href="#">Lorem ipsum</a>
-                        </h4>
-                        <p className="card-text mb-0">
-                            NT$1,080
-                            <span className="text-muted ">
-                            <del>NT$1,200</del>
-                            </span>
-                        </p>
-                        <p className="text-muted mt-3"></p>
-                        </div>
-                    </div>
-                    </div>
-                    <div className="swiper-slide">
-                    <div className="card border-0 mb-4 position-relative position-relative">
-                        <img
-                        src="https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1950&q=80"
-                        className="card-img-top rounded-0"
-                        alt="..."
-                        />
-                        <a href="#" className="text-dark"></a>
-                        <div className="card-body p-0">
-                        <h4 className="mb-0 mt-3">
-                            <a href="#">Lorem ipsum</a>
-                        </h4>
-                        <p className="card-text mb-0">
-                            NT$1,080
-                            <span className="text-muted ">
-                            <del>NT$1,200</del>
-                            </span>
-                        </p>
-                        <p className="text-muted mt-3"></p>
-                        </div>
-                    </div>
-                    </div>
-                    <div className="swiper-slide">
-                    <div className="card border-0 mb-4 position-relative position-relative">
-                        <img
-                        src="https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1950&q=80"
-                        className="card-img-top rounded-0"
-                        alt="..."
-                        />
-                        <a href="#" className="text-dark"></a>
-                        <div className="card-body p-0">
-                        <h4 className="mb-0 mt-3">
-                            <a href="#">Lorem ipsum</a>
-                        </h4>
-                        <p className="card-text mb-0">
-                            NT$1,080
-                            <span className="text-muted ">
-                            <del>NT$1,200</del>
-                            </span>
-                        </p>
-                        <p className="text-muted mt-3"></p>
-                        </div>
-                    </div>
-                    </div>
-                </div>
                 </div>
             </div>
+
+            {isScreenLoading && (
+                <div
+                className="d-flex justify-content-center align-items-center"
+                style={{
+                    position: "fixed",
+                    inset: 0,
+                    backgroundColor: "rgba(255,255,255,0.3)",
+                    zIndex: 999,
+                }}
+                >
+                <ReactLoading type="spin" color="black" width="4rem" height="4rem" />
+                </div>
+            )}
         </div>
     )
 

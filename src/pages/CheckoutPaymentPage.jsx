@@ -1,26 +1,53 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const API_PATH = import.meta.env.VITE_API_PATH;
 
 export default function CheckoutPaymentPage() {
+  
+  const [cart, setCart] = useState({});
+  
+  // 取得購物車列表
+  const getCart = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/v2/api/${API_PATH}/cart`);
+
+      setCart(res.data.data);
+      } catch (error) {
+      alert('取得購物車列表失敗')
+      }
+  }
+
+  // 取得產品資料
+  useEffect(() => {
+    getCart();
+    
+    // 滾動到頂部
+    window.scrollTo(0, 0)
+  }, []);
+
   return (
     <div className="container">
       <div className="row justify-content-center">
         <div className="col-md-10">
           <nav className="navbar navbar-expand-lg navbar-light px-0">
             <a className="navbar-brand" href="./index.html">
-              Navbar
+              就快完成訂單了！
             </a>
             <ul className="list-unstyled mb-0 ms-md-auto d-flex align-items-center justify-content-between justify-content-md-end w-100 mt-md-0 mt-4">
-              <li className="me-md-6 me-3 position-relative custom-step-line">
+              <li className="me-md-6 me-6 position-relative custom-step-line">
                 <i className="fas fa-check-circle d-md-inline d-block text-center"></i>
-                <span className="text-nowrap">Lorem ipsum</span>
+                <span className="text-nowrap">選擇行程</span>
               </li>
-              <li className="me-md-6 me-3 position-relative custom-step-line">
+              <li className="me-md-6 me-6 position-relative custom-step-line">
                 <i className="fas fa-check-circle d-md-inline d-block text-center"></i>
-                <span className="text-nowrap">Lorem ipsum</span>
+                <span className="text-nowrap">立即付款</span>
               </li>
               <li>
                 <i className="fas fa-dot-circle d-md-inline d-block text-center"></i>
-                <span className="text-nowrap">Lorem ipsum</span>
+                <span className="text-nowrap">享受旅程</span>
               </li>
             </ul>
           </nav>
@@ -34,36 +61,23 @@ export default function CheckoutPaymentPage() {
       <div className="row flex-row-reverse justify-content-center pb-5">
         <div className="col-md-4">
           <div className="border p-4 mb-4">
-            <div className="d-flex">
+            {cart.carts?.map((cartItem) => (
+            <div key={cartItem.id} className="d-flex">
               <img
-                src="https://images.unsplash.com/photo-1502743780242-f10d2ce370f3?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1916&q=80"
+                src={cartItem.product.imageUrl}
                 alt=""
                 className="me-2"
                 style={{ width: "48px", height: "48px", objectFit: "cover" }}
               />
               <div className="w-100">
                 <div className="d-flex justify-content-between">
-                  <p className="mb-0 fw-bold">Lorem ipsum</p>
-                  <p className="mb-0">NT$12,000</p>
+                  <p className="mb-0 fw-bold">{cartItem.product.title}</p>
+                  <p className="mb-0">NT${cartItem.final_total?.toLocaleString()}</p>
                 </div>
-                <p className="mb-0 fw-bold">x1</p>
+                <p className="mb-0 fw-bold">x{cartItem.qty}</p>
               </div>
             </div>
-            <div className="d-flex mt-2">
-              <img
-                src="https://images.unsplash.com/photo-1502743780242-f10d2ce370f3?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1916&q=80"
-                alt=""
-                className="me-2"
-                style={{ width: "48px", height: "48px", objectFit: "cover" }}
-              />
-              <div className="w-100">
-                <div className="d-flex justify-content-between">
-                  <p className="mb-0 fw-bold">Lorem ipsum</p>
-                  <p className="mb-0">NT$12,000</p>
-                </div>
-                <p className="mb-0 fw-bold">x1</p>
-              </div>
-            </div>
+          ))}
             <table className="table mt-4 border-top border-bottom text-muted">
               <tbody>
                 <tr>
@@ -71,24 +85,24 @@ export default function CheckoutPaymentPage() {
                     scope="row"
                     className="border-0 px-0 pt-4 font-weight-normal"
                   >
-                    Subtotal
+                    小計
                   </th>
-                  <td className="text-end border-0 px-0 pt-4">NT$24,000</td>
+                  <td className="text-end border-0 px-0 pt-4">NT${cart.total?.toLocaleString()}</td>
                 </tr>
                 <tr>
                   <th
                     scope="row"
                     className="border-0 px-0 pt-0 pb-4 font-weight-normal"
                   >
-                    Payment
+                    付款方式
                   </th>
                   <td className="text-end border-0 px-0 pt-0 pb-4">ApplePay</td>
                 </tr>
               </tbody>
             </table>
             <div className="d-flex justify-content-between mt-4">
-              <p className="mb-0 h4 fw-bold">Total</p>
-              <p className="mb-0 h4 fw-bold">NT$24,000</p>
+              <p className="mb-0 h4 fw-bold">總計</p>
+              <p className="mb-0 h4 fw-bold">NT${cart.final_total?.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -114,7 +128,7 @@ export default function CheckoutPaymentPage() {
                 id="headingTwo"
                 data-bs-toggle="collapse"
                 data-bs-target="#collapseTwo"
-                aria-expanded="true"
+                aria-expanded="false"
                 aria-controls="collapseTwo"
               >
                 <p className="mb-0 position-relative custom-checkout-label">
@@ -129,14 +143,14 @@ export default function CheckoutPaymentPage() {
               >
                 <div className="card-body bg-light ps-5 py-4">
                   <div className="mb-2">
-                    <label for="Lorem ipsum1" className="text-muted mb-0">
+                    <label htmlFor="Lorem ipsum1" className="text-muted mb-0">
                       信用卡號
                     </label>
                     <input
                       type="text"
                       className="form-control"
                       id="Lorem ipsum1"
-                      placeholder="Lorem ipsum"
+                      placeholder="請輸入信用卡號"
                     />
                   </div>
                 </div>
@@ -148,7 +162,7 @@ export default function CheckoutPaymentPage() {
                 id="headingThree"
                 data-bs-toggle="collapse"
                 data-bs-target="#collapseThree"
-                aria-expanded="true"
+                aria-expanded="false"
                 aria-controls="collapseThree"
               >
                 <p className="mb-0 position-relative custom-checkout-label">
@@ -158,9 +172,9 @@ export default function CheckoutPaymentPage() {
             </div>
           </div>
           <div className="d-flex flex-column-reverse flex-md-row mt-4 justify-content-between align-items-md-center align-items-end w-100">
-            <a href="./product.html" className="text-dark mt-md-0 mt-3">
-              <i className="fas fa-chevron-left me-2"></i> Lorem ipsum
-            </a>
+            <Link to="/checkout-form" className="text-dark mt-md-0 mt-3">
+              <i className="fas fa-chevron-left me-2"></i> 回上一步
+            </Link>
             <Link
               to="/checkout-success"
               className="btn btn-dark py-3 px-7"
